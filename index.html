@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дофаминовая Станция⚡</title>
+    <link rel="icon" href="https://images.emojiterra.com/google/noto-emoji/unicode-15/color/512px/1f929.png"/>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            min-height: 100vh;
+            background: #070913;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            padding: 20px 10px;
+        }
+
+        /* Неоновый блюр на фоне */
+        .glow-bg {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.2) 0%, rgba(236, 72, 153, 0.12) 40%, transparent 70%);
+            filter: blur(80px);
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a855f7, #ec4899, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+        }
+
+        p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        /* Сетка выбора игрушек */
+        .toys-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 8px;
+            width: 100%;
+            max-width: 800px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 10px;
+            border-radius: 20px;
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            margin-bottom: 15px;
+        }
+
+        .tab-btn {
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.7);
+            padding: 10px 8px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8rem;
+            transition: all 0.2s ease;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .tab-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.4), rgba(236, 72, 153, 0.4));
+            color: #fff;
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+        }
+
+        /* Главная интерактивная сцена */
+        .viewport-wrapper {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .viewport {
+            width: 100%;
+            height: 480px;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 28px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .toy-screen {
+            display: none;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .toy-screen.active {
+            display: flex;
+        }
+
+        /* Общие Canvas элементов */
+        canvas {
+            border-radius: 20px;
+            touch-action: none;
+        }
+
+        /* Кнопка сброса */
+        .btn-reset {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            color: #fca5a5;
+            padding: 10px 24px;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.2s ease;
+            display: none;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+        }
+
+        .btn-reset:hover {
+            background: rgba(239, 68, 68, 0.3);
+            border-color: rgba(239, 68, 68, 0.6);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+
+        .btn-reset:active {
+            transform: translateY(1px);
+        }
+
+        /* --- 1. ПУПЫРКА --- */
+        .pop-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            max-width: 450px;
+            width: 100%;
+            padding: 20px;
+        }
+        .bubble {
+            aspect-ratio: 1;
+            border-radius: 50%;
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.02));
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: inset 0 4px 6px rgba(255, 255, 255, 0.2), 0 6px 12px rgba(0, 0, 0, 0.4);
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .bubble.popped {
+            background: rgba(0, 0, 0, 0.5);
+            box-shadow: inset 0 4px 8px rgba(0, 0, 0, 0.9);
+            transform: scale(0.85);
+            border-color: rgba(255, 255, 255, 0.05);
+        }
+
+        /* --- 3. СИНТЕЗАТОР --- */
+        .synth-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            width: 100%;
+            max-width: 440px;
+            padding: 20px;
+        }
+        .synth-key {
+            aspect-ratio: 1;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .synth-key:active, .synth-key.active {
+            background: rgba(236, 72, 153, 0.4);
+            border-color: #ec4899;
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.6);
+            transform: scale(0.92);
+        }
+
+        /* --- 5. КЛИКЕР ДОФАМИНА --- */
+        .clicker-btn {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #a855f7, #ec4899);
+            color: #fff;
+            font-size: 3rem;
+            cursor: pointer;
+            box-shadow: 0 0 40px rgba(236, 72, 153, 0.5);
+            transition: transform 0.05s;
+            outline: none;
+        }
+        .clicker-btn:active {
+            transform: scale(0.9);
+        }
+        .counter {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            color: #f472b6;
+            text-shadow: 0 0 10px rgba(244, 114, 182, 0.5);
+        }
+
+        /* --- 6. ПЕСОЧНИЦА ГРАВИТАЦИИ --- */
+        .hint-text {
+            position: absolute;
+            bottom: 15px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.4);
+            pointer-events: none;
+        }
+
+        /* --- 7. СВЕТОВОЙ МЕЧ --- */
+        .saber-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+        }
+        .saber-blade {
+            width: 18px;
+            height: 0px;
+            background: #fff;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 0 20px #38bdf8, 0 0 40px #38bdf8, 0 0 60px #38bdf8;
+            transition: height 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .saber-blade.on {
+            height: 260px;
+        }
+        .saber-hilt {
+            width: 28px;
+            height: 70px;
+            background: linear-gradient(to right, #64748b, #94a3b8, #475569);
+            border-radius: 4px 4px 8px 8px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        /* --- 8. УБИВАШКА ВРЕМЕНИ (СЛАЙДЕРЫ) --- */
+        .controls-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 80%;
+            max-width: 350px;
+        }
+        .custom-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 10px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+        }
+        .custom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #a855f7;
+            cursor: pointer;
+            box-shadow: 0 0 10px #a855f7;
+        }
+
+        /* --- 9. ДЕТЕКТОР СКУКИ --- */
+        .boredom-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+            width: 85%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.03);
+            padding: 30px 20px;
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+        }
+        .boredom-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #fff;
+            text-align: center;
+        }
+        .boredom-value {
+            font-size: 2.8rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #38bdf8, #ef4444);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            transition: all 0.2s;
+        }
+        .boredom-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 14px;
+            border-radius: 7px;
+            background: linear-gradient(to right, #3b82f6, #a855f7, #ef4444);
+            outline: none;
+        }
+        .boredom-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #fff;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.8);
+            transition: transform 0.1s;
+        }
+        .boredom-slider::-webkit-slider-thumb:active {
+            transform: scale(1.2);
+        }
+
+        /* --- 10. КУБИК 3D --- */
+        .cube-scene {
+            width: 120px;
+            height: 120px;
+            perspective: 600px;
+        }
+        .cube {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+        }
+        .cube-face {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            background: rgba(168, 85, 247, 0.15);
+            backdrop-filter: blur(5px);
+            border-radius: 12px;
+        }
+        .front  { transform: rotateY(  0deg) translateZ(60px); }
+        .back   { transform: rotateY(180deg) translateZ(60px); }
+        .right  { transform: rotateY( 90deg) translateZ(60px); }
+        .left   { transform: rotateY(-90deg) translateZ(60px); }
+        .top    { transform: rotateX( 90deg) translateZ(60px); }
+        .bottom { transform: rotateX(-90deg) translateZ(60px); }
+    </style>
+</head>
+<body>
+
+    <div class="glow-bg"></div>
+
+    <header>
+        <h1>Dopamine Station ⚡</h1>
+        <p>10 способов моментально сбросить скуку</p>
+    </header>
+
+    <!-- Сетка выбора -->
+    <div class="toys-grid">
+        <button class="tab-btn active" onclick="setToy(0)">🫧 1. Пупырка</button>
+        <button class="tab-btn" onclick="setToy(1)">✨ 2. Неон Холст</button>
+        <button class="tab-btn" onclick="setToy(2)">🎹 3. Синтезатор</button>
+        <button class="tab-btn" onclick="setToy(3)">🔮 4. Тянучка</button>
+        <button class="tab-btn" onclick="setToy(4)">💥 5. Кликер</button>
+        <button class="tab-btn" onclick="setToy(5)">🌌 6. Гравитация</button>
+        <button class="tab-btn" onclick="setToy(6)">⚔️ 7. Светомеч</button>
+        <button class="tab-btn" onclick="setToy(7)">🎛️ 8. Залипалка</button>
+        <button class="tab-btn" onclick="setToy(8)">📈 9. Скукометр</button>
+        <button class="tab-btn" onclick="setToy(9)">🎲 10. 3D Куб</button>
+    </div>
+
+    <!-- Область игрушки и элементы управления -->
+    <div class="viewport-wrapper">
+        <div class="viewport">
+
+            <!-- 1. ПУПЫРКА -->
+            <div class="toy-screen active" id="toy-0">
+                <div class="pop-grid" id="popGrid"></div>
+            </div>
+
+            <!-- 2. НЕОНОВЫЙ ХОЛСТ -->
+            <div class="toy-screen" id="toy-1">
+                <canvas id="canvasPaint" width="760" height="440"></canvas>
+                <span class="hint-text">Зажимай и рисуй светящиеся линии</span>
+            </div>
+
+            <!-- 3. СИНТЕЗАТОР -->
+            <div class="toy-screen" id="toy-2">
+                <div class="synth-grid" id="synthGrid"></div>
+            </div>
+
+            <!-- 4. ТЯНУЧКА (BLOB) -->
+            <div class="toy-screen" id="toy-3">
+                <canvas id="canvasBlob" width="760" height="440"></canvas>
+                <span class="hint-text">Води курсором или пальцем, чтобы тянуть каплю</span>
+            </div>
+
+            <!-- 5. КЛИКЕР -->
+            <div class="toy-screen" id="toy-4">
+                <div class="counter" id="clickCount">0</div>
+                <button class="clicker-btn" id="clickBtn">⚡</button>
+            </div>
+
+            <!-- 6. ГРАВИТАЦИЯ -->
+            <div class="toy-screen" id="toy-5">
+                <canvas id="canvasGravity" width="760" height="440"></canvas>
+                <span class="hint-text">Кликай в любом месте, чтобы спавнить шарики</span>
+            </div>
+
+            <!-- 7. СВЕТОВОЙ МЕЧ -->
+            <div class="toy-screen" id="toy-6">
+                <div class="saber-container" id="saber">
+                    <div class="saber-blade" id="saberBlade"></div>
+                    <div class="saber-hilt"></div>
+                </div>
+                <span class="hint-text" style="margin-top: 20px;">Нажми, чтобы включить/выключить</span>
+            </div>
+
+            <!-- 8. ЗАЛИПАЛКА (СЛАЙДЕРЫ) -->
+            <div class="toy-screen" id="toy-7">
+                <div class="controls-stack">
+                    <input type="range" class="custom-slider" min="0" max="100" value="30">
+                    <input type="range" class="custom-slider" min="0" max="100" value="70">
+                    <input type="range" class="custom-slider" min="0" max="100" value="50">
+                    <input type="range" class="custom-slider" min="0" max="100" value="90">
+                </div>
+            </div>
+
+            <!-- 9. ИЗМЕРИТЕЛЬ СКУКИ -->
+            <div class="toy-screen" id="toy-8">
+                <div class="boredom-box">
+                    <div class="boredom-title">Уровень скуки:</div>
+                    <div class="boredom-value" id="boredomVal">0%</div>
+                    <input type="range" class="boredom-slider" id="boredomInput" min="0" max="100" value="0">
+                </div>
+                <span class="hint-text">Двигай слайдер вправо — звук станет выше!</span>
+            </div>
+
+            <!-- 10. 3D КУБ -->
+            <div class="toy-screen" id="toy-9">
+                <div class="cube-scene">
+                    <div class="cube" id="cube">
+                        <div class="cube-face front"></div>
+                        <div class="cube-face back"></div>
+                        <div class="cube-face right"></div>
+                        <div class="cube-face left"></div>
+                        <div class="cube-face top"></div>
+                        <div class="cube-face bottom"></div>
+                    </div>
+                </div>
+                <span class="hint-text">Двигай мышку, чтобы вращать куб</span>
+            </div>
+
+        </div>
+
+        <!-- Кнопка сброса состояния -->
+        <button class="btn-reset" id="globalResetBtn" onclick="resetActiveToy()">Сброс 🔄</button>
+    </div>
+
+    <script>
+        // Единый AudioContext
+        const actx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function ensureAudio() {
+            if (actx.state === 'suspended') actx.resume();
+        }
+
+        // Переключение табов
+        let activeToy = 0;
+        const resetBtn = document.getElementById('globalResetBtn');
+        const resettableToys = [1, 4, 5, 7, 8]; // Добавлен 8-й таб (Скукометр)
+
+        function setToy(idx) {
+            ensureAudio();
+            document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+            document.querySelectorAll('.toy-screen').forEach((s, i) => s.classList.toggle('active', i === idx));
+            activeToy = idx;
+
+            // Если уходим со слайдера скуки — глушим его звук
+            if (idx !== 8 && boredomOsc) {
+                stopBoredomSound();
+            }
+
+            // Отображение кнопки сброса только для подходящих игрушек
+            resetBtn.style.display = resettableToys.includes(idx) ? 'block' : 'none';
+
+            if (idx === 3) initBlob();
+            if (idx === 5) initGravity();
+        }
+
+        // Функция сброса активной игрушки
+        function resetActiveToy() {
+            if (activeToy === 1) {
+                // Сброс неонового холста
+                ctxP.clearRect(0, 0, cPaint.width, cPaint.height);
+            } else if (activeToy === 4) {
+                // Сброс кликера
+                clicks = 0;
+                cDisp.innerText = clicks;
+            } else if (activeToy === 5) {
+                // Сброс шариков гравитации
+                balls = [];
+            } else if (activeToy === 7) {
+                // Сброс слайдеров залипалки
+                document.querySelectorAll('.custom-slider').forEach(s => s.value = 50);
+            } else if (activeToy === 8) {
+                // Сброс уровня скуки
+                const slider = document.getElementById('boredomInput');
+                slider.value = 0;
+                updateBoredom(0);
+            }
+        }
+
+        // --- 1. ПУПЫРКА ---
+        const popGrid = document.getElementById('popGrid');
+        function playPopSound() {
+            ensureAudio();
+            const osc = actx.createOscillator();
+            const gain = actx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(120 + Math.random() * 80, actx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(40, actx.currentTime + 0.08);
+            gain.gain.setValueAtTime(0.4, actx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.08);
+            osc.connect(gain);
+            gain.connect(actx.destination);
+            osc.start();
+            osc.stop(actx.currentTime + 0.08);
+        }
+
+        for (let i = 0; i < 24; i++) {
+            const b = document.createElement('div');
+            b.className = 'bubble';
+            b.addEventListener('pointerdown', () => {
+                if (!b.classList.contains('popped')) {
+                    b.classList.add('popped');
+                    playPopSound();
+                    if (document.querySelectorAll('.bubble.popped').length === 24) {
+                        setTimeout(() => document.querySelectorAll('.bubble').forEach(el => el.classList.remove('popped')), 400);
+                    }
+                }
+            });
+            popGrid.appendChild(b);
+        }
+
+        // --- 2. НЕОН ХОЛСТ ---
+        const cPaint = document.getElementById('canvasPaint');
+        const ctxP = cPaint.getContext('2d');
+        let drawing = false, hue = 0;
+
+        function drawP(e) {
+            if (!drawing) return;
+            const r = cPaint.getBoundingClientRect();
+            const x = (e.clientX || (e.touches && e.touches[0].clientX)) - r.left;
+            const y = (e.clientY || (e.touches && e.touches[0].clientY)) - r.top;
+
+            ctxP.lineWidth = 10;
+            ctxP.lineCap = 'round';
+            ctxP.strokeStyle = `hsl(${hue}, 100%, 60%)`;
+            ctxP.shadowBlur = 12;
+            ctxP.shadowColor = `hsl(${hue}, 100%, 50%)`;
+
+            ctxP.lineTo(x, y);
+            ctxP.stroke();
+            ctxP.beginPath();
+            ctxP.moveTo(x, y);
+            hue = (hue + 2) % 360;
+        }
+
+        cPaint.addEventListener('mousedown', (e) => { drawing = true; drawP(e); });
+        cPaint.addEventListener('mouseup', () => { drawing = false; ctxP.beginPath(); });
+        cPaint.addEventListener('mousemove', drawP);
+        cPaint.addEventListener('touchstart', (e) => { drawing = true; drawP(e); });
+        cPaint.addEventListener('touchend', () => { drawing = false; ctxP.beginPath(); });
+        cPaint.addEventListener('touchmove', drawP);
+
+        // --- 3. СИНТЕЗАТОР ---
+        const synthGrid = document.getElementById('synthGrid');
+        const freqs = [261.6, 293.6, 329.6, 349.2, 392.0, 440.0, 493.8, 523.2];
+        const notes = ['C4', 'D4', 'E4', 'F4', 'G4', 'A4', 'B4', 'C5'];
+
+        freqs.forEach((f, i) => {
+            const k = document.createElement('div');
+            k.className = 'synth-key';
+            k.innerText = notes[i];
+            k.addEventListener('pointerdown', () => {
+                ensureAudio();
+                const osc = actx.createOscillator();
+                const gain = actx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(f, actx.currentTime);
+                gain.gain.setValueAtTime(0.3, actx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, actx.currentTime + 1);
+                osc.connect(gain);
+                gain.connect(actx.destination);
+                osc.start();
+                osc.stop(actx.currentTime + 1);
+
+                k.classList.add('active');
+                setTimeout(() => k.classList.remove('active'), 150);
+            });
+            synthGrid.appendChild(k);
+        });
+
+        // --- 4. ТЯНУЧКА ---
+        const cBlob = document.getElementById('canvasBlob');
+        const ctxB = cBlob.getContext('2d');
+        let bPos = { x: 380, y: 220 }, bMouse = { x: 380, y: 220 }, bAnim;
+
+        cBlob.addEventListener('mousemove', (e) => {
+            const r = cBlob.getBoundingClientRect();
+            bMouse.x = e.clientX - r.left;
+            bMouse.y = e.clientY - r.top;
+        });
+
+        function initBlob() {
+            cancelAnimationFrame(bAnim);
+            function loop() {
+                ctxB.clearRect(0, 0, cBlob.width, cBlob.height);
+                bPos.x += (bMouse.x - bPos.x) * 0.1;
+                bPos.y += (bMouse.y - bPos.y) * 0.1;
+
+                let dx = bMouse.x - bPos.x, dy = bMouse.y - bPos.y;
+                let dist = Math.sqrt(dx * dx + dy * dy);
+
+                ctxB.save();
+                ctxB.translate(bPos.x, bPos.y);
+                ctxB.rotate(Math.atan2(dy, dx));
+                let stretch = Math.min(dist * 0.006, 0.7);
+
+                ctxB.beginPath();
+                ctxB.ellipse(0, 0, 50 * (1 + stretch), 50 * (1 - stretch * 0.5), 0, 0, Math.PI * 2);
+                let grad = ctxB.createLinearGradient(-50, -50, 50, 50);
+                grad.addColorStop(0, '#ec4899');
+                grad.addColorStop(1, '#8b5cf6');
+                ctxB.fillStyle = grad;
+                ctxB.shadowBlur = 25;
+                ctxB.shadowColor = '#ec4899';
+                ctxB.fill();
+                ctxB.restore();
+
+                if (activeToy === 3) bAnim = requestAnimationFrame(loop);
+            }
+            loop();
+        }
+
+        // --- 5. КЛИКЕР ---
+        let clicks = 0;
+        const cBtn = document.getElementById('clickBtn');
+        const cDisp = document.getElementById('clickCount');
+        cBtn.addEventListener('click', () => {
+            clicks++;
+            cDisp.innerText = clicks;
+            ensureAudio();
+            const osc = actx.createOscillator();
+            const gain = actx.createGain();
+            osc.frequency.setValueAtTime(300 + clicks * 2, actx.currentTime);
+            gain.gain.setValueAtTime(0.2, actx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.05);
+            osc.connect(gain);
+            gain.connect(actx.destination);
+            osc.start();
+            osc.stop(actx.currentTime + 0.05);
+        });
+
+        // --- 6. ГРАВИТАЦИЯ ---
+        const cGrav = document.getElementById('canvasGravity');
+        const ctxG = cGrav.getContext('2d');
+        let balls = [], gAnim;
+
+        class Ball {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.vx = (Math.random() - 0.5) * 8;
+                this.vy = (Math.random() - 0.5) * 8;
+                this.r = 12 + Math.random() * 12;
+                this.color = `hsl(${Math.random() * 360}, 90%, 65%)`;
+            }
+            update() {
+                this.vy += 0.25; // Гравитация
+                this.x += this.vx;
+                this.y += this.vy;
+
+                if (this.y + this.r > cGrav.height) {
+                    this.y = cGrav.height - this.r;
+                    this.vy *= -0.7;
+                }
+                if (this.x + this.r > cGrav.width || this.x - this.r < 0) {
+                    this.vx *= -0.7;
+                }
+            }
+            draw() {
+                ctxG.beginPath();
+                ctxG.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                ctxG.fillStyle = this.color;
+                ctxG.shadowBlur = 10;
+                ctxG.shadowColor = this.color;
+                ctxG.fill();
+            }
+        }
+
+        cGrav.addEventListener('pointerdown', (e) => {
+            const r = cGrav.getBoundingClientRect();
+            for (let i = 0; i < 5; i++) {
+                balls.push(new Ball(e.clientX - r.left, e.clientY - r.top));
+            }
+        });
+
+        function initGravity() {
+            cancelAnimationFrame(gAnim);
+            function loop() {
+                ctxG.clearRect(0, 0, cGrav.width, cGrav.height);
+                balls.forEach(b => { b.update(); b.draw(); });
+                if (activeToy === 5) gAnim = requestAnimationFrame(loop);
+            }
+            loop();
+        }
+
+        // --- 7. СВЕТОВОЙ МЕЧ ---
+        const saber = document.getElementById('saber');
+        const blade = document.getElementById('saberBlade');
+        let saberOn = false;
+
+        saber.addEventListener('click', () => {
+            ensureAudio();
+            saberOn = !saberOn;
+            blade.classList.toggle('on', saberOn);
+
+            const osc = actx.createOscillator();
+            const gain = actx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(saberOn ? 100 : 300, actx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(saberOn ? 300 : 80, actx.currentTime + 0.2);
+            gain.gain.setValueAtTime(0.3, actx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, actx.currentTime + 0.2);
+            osc.connect(gain);
+            gain.connect(actx.destination);
+            osc.start();
+            osc.stop(actx.currentTime + 0.2);
+        });
+
+        // --- 9. ДЕТЕКТОР СКУКИ (СЛАЙДЕР СО ЗВУКОМ) ---
+        const boredomInput = document.getElementById('boredomInput');
+        const boredomVal = document.getElementById('boredomVal');
+        let boredomOsc = null, boredomGain = null;
+
+        function updateBoredom(val) {
+            boredomVal.innerText = val + '%';
+
+            if (val == 0) {
+                stopBoredomSound();
+                return;
+            }
+
+            ensureAudio();
+
+            if (!boredomOsc) {
+                boredomOsc = actx.createOscillator();
+                boredomGain = actx.createGain();
+                boredomOsc.type = 'sawtooth';
+                boredomGain.gain.value = 0.05;
+
+                boredomOsc.connect(boredomGain);
+                boredomGain.connect(actx.destination);
+                boredomOsc.start();
+            }
+
+            // Динамический расчёт частоты звука (от 100 Гц до 1200 Гц)
+            const targetFreq = 100 + (val / 100) * 1100;
+            const targetGain = 0.02 + (val / 100) * 0.18;
+
+            boredomOsc.frequency.setTargetAtTime(targetFreq, actx.currentTime, 0.03);
+            boredomGain.gain.setTargetAtTime(targetGain, actx.currentTime, 0.03);
+        }
+
+        function stopBoredomSound() {
+            if (boredomGain) {
+                boredomGain.gain.setTargetAtTime(0, actx.currentTime, 0.05);
+                setTimeout(() => {
+                    if (boredomOsc) {
+                        boredomOsc.stop();
+                        boredomOsc.disconnect();
+                        boredomOsc = null;
+                        boredomGain = null;
+                    }
+                }, 60);
+            }
+        }
+
+        boredomInput.addEventListener('input', (e) => {
+            updateBoredom(e.target.value);
+        });
+
+        // --- 10. 3D КУБ ---
+        const cube = document.getElementById('cube');
+        document.addEventListener('mousemove', (e) => {
+            if (activeToy === 9) {
+                let x = (e.clientX / window.innerWidth - 0.5) * 360;
+                let y = (e.clientY / window.innerHeight - 0.5) * 360;
+                cube.style.transform = `rotateX(${-y}deg) rotateY(${x}deg)`;
+            }
+        });
+    </script>
+</body>
+</html>
